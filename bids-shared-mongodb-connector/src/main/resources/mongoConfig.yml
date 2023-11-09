@@ -1,0 +1,8 @@
+mongo:
+  credentials: C:/Users/vikasm1.USEREADYTECH/Documents/repos/bids-api/bids-shared-mongodb-connector/src/main/resources/mongoDBConfig.yml
+
+---
+spring:
+  profile: local
+  mongo:
+    credentials: C:/Users/vikasm1.USEREADYTECH/Documents/repos/bids-api/bids-shared-mongodb-connector/src/main/resources/mongoDBConfig.yml

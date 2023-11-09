@@ -1,0 +1,19 @@
+globalConfig:
+  disableSecurity: true
+  isHttpsRequired: false
+
+authConfig:
+    -
+      jwt:
+        JWKSource: com.bnym.cloud.security.keys.PKISource
+        issuers:
+          -url: https://authenticate.qa.bnymellon.com
+          jwksURI: https://authenticate.qa.bnymellon.com/pf/JWKS
+
+    -
+      accessToken:
+        introspectionEndpoint: https://authenticate.qa.bnymellon.com/as/introspect.oauth2
+
+pki:
+  region: test
+  orgID: phm

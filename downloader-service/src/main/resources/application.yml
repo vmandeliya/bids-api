@@ -1,0 +1,119 @@
+#common configuration for all profiles
+spring:
+  application:
+    name: downloader-service
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+    consul:
+      host: ${HOST}
+      discovery:
+        service-name: ${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-${spring.application.name}
+        enabled: true
+        register: false
+        tags: bidsservice=downloader-service,ebc-mongo
+    discovery:
+      client:
+        composite-indicator:
+          enabled: false
+    sleuth:
+      web:
+        enabled: true
+        skip-pattern: /info|/actuator|/actuator/health
+      sampler:
+        probability: 0.1
+    mvc:
+      pathmatch:
+        matching-strategy: ant_path_matcher
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: 'health'
+
+resilience4j.thread-pool-bulkhead:
+  instances:
+    bulkheadConfig:
+      maxThreadPoolSize: 350
+      coreThreadPoolSize: 35
+      queueCapacity: 10
+
+
+server:
+  port: 7089
+
+
+logging:
+  level:
+    root: WARN
+    com.bnym.phm.bids-commons.web.trace.servlet: INFO
+
+feign:
+  client:
+    config:
+      default:
+        errorDecoder: com.bnym.phm.bids.commons.exception.handler.BIDSErrorDecoder
+        loggerLevel: full
+        requestInterceptors:
+          - com.bnym.phm.bids.commons.interceptor.JWTIDTokenHeaderForwardInterceptor
+        decode404: false
+
+bids:
+  security:
+    endpoints:
+      open: /swagger/v2/api-docs,/configuration/ui/**,/swagger-resources/**,/configuration/**,/swagger-ui.html,/webjars/**,actuator/health,actuator/info,/error,/open
+      protected: '**'
+  downloader-service:
+    cap: 200000
+  http-trace:
+    api-service:
+      enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  cloud:
+    consul:
+      host: localhost
+      discovery:
+        service-name: ${spring.application.name}
+        hostname: localhost
+        register: true
+---
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: test
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: qa
+
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  cloud:
+    consul:
+      discovery:
+        service-name: ${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-downloader-service
+        register: false

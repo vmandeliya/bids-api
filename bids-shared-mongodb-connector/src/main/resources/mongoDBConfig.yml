@@ -1,0 +1,6 @@
+---
+spring:
+  profiles: local
+  data:
+    mongodb:
+      uri: mongodb+srv://vvmandeliya076:wS93Rg7sqcjr8ZjG@cluster0.oqjxzns.mongodb.net/bids-api

@@ -1,0 +1,187 @@
+#common configuration for all profiles
+spring:
+  application:
+    name: merlin-api-service
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+    consul:
+      host: ${HOST}
+      discovery:
+        service-name: ${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-${spring.application.name}
+        healthCheckPath: ${server.servlet.context.path}${spring.mvc.servlet.path}/actuator/health
+        enabled: true
+        register: false
+        tags: bidsservice=merlin-api-service
+    discovery:
+      client:
+        composite-indicator:
+          enabled: false
+    sleuth:
+      web:
+        enabled: true
+        skip-pattern: /info|/actuator|/actuator/health
+      sampler:
+        probability: 0.1
+    mvc:
+      pathmatch:
+        matching-strategy: ant_path_matcher
+        throw-exception-if-no-handler-found: false
+      servlet:
+        path: /v1
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info,health
+  server:
+    servlet:
+      context-path: /actuator
+  trace:
+    http:
+      include: principle,request-headers,response-headers,cookies-headers,time-taken,authorization-header,remote-address,session-id
+  endpoint:
+    health:
+      show-details: always
+  health:
+    defaults:
+      enabled: false
+    mongo:
+      enabled: true
+
+resilience4j.thread-pool-bulkhead:
+  instances:
+    bulkheadConfig:
+      maxThreadPoolSize: 350
+      coreThreadPoolSize: 35
+      queueCapacity: 10
+
+
+server:
+  port: 7079
+  servlet:
+    context-path: /merlin
+
+feign:
+  client:
+    config:
+      default:
+        errorDecoder: com.bnym.phm.bids.commons.exception.handler.BIDSErrorDecoder
+        loggerLevel: full
+        requestInterceptors:
+          - com.bnym.phm.bids.commons.security.interceptor.JWTIDTokenHeaderForwardInterceptor
+        decode404: false
+  servicename:
+    ebc:
+      downloader: ${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-downloader-service
+
+
+  springdoc:
+    packagesToScan: com.bnym.bids.merlin.boundary
+    paths-to-exclude: /downlods/**,/analytics/**,/data-recon/**,/gpiCard/**,/user-preference/**,/users-statistics,/features-statistics
+    api-docs:
+      path: /api-docs/merlin
+
+bids:
+  security:
+    endpoints:
+      open: /api-docs/**,/webjars/**,/actuator/health,/actuator/info,/docs/index.html,/open
+      protected: '**'
+  http-trace:
+    api-service:
+      enabled: true
+    merlin-api-service:
+      enabled: true
+      last:
+        x:
+          hours: 8
+
+#logging:
+#  level:
+#    root: WARN
+#    com.bnym.phm.bids-commons.web.trace.servlet: INFO
+
+
+kerberos:
+  keytab:
+    event-topic-path: /bxp/secrets/${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}/eventTopic.kt
+  jaasBase: com.sun.security.auth.module.Krb5LoginModule required userKeyTab=true storeKey=true doNotPrompt=true serviceName=kafka refreshKrb5Config=true
+  krb5-path: /bxp/secrets/${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}/krb5_p.conf
+  principle: phm_dev_auth_phm0
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  cloud:
+    consul:
+      host: localhost
+      discovery:
+        service-name: ${spring.application.name}
+        hostname: localhost
+        register: true
+feign:
+  servicename:
+    ebc:
+      downloader: downloader-service
+
+kerberos:
+  keytab:
+    event-topic-path: c:/projects/keberos/phm_dev_auth_phm0.kt
+  krb5-path: c:/projects/keberos/krb5.conf
+
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+kerberos:
+  principle: phm_dev_auth_phm0
+
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: test
+
+kerberos:
+  principle: phm_dev_auth_phm0
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+kerberos:
+  principle: phm_qa_auth_phmq
+
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  cloud:
+    consul:
+      discovery:
+        service-name: ${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-merlin-api-service
+        register: false
+
+feign:
+  servicename:
+    ebc:
+      downloader: ${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-downloader-service
+
+
+kerberos:
+  principle: phm_prod_auth_phmp

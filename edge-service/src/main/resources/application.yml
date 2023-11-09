@@ -1,0 +1,375 @@
+#common configuration for all profiles
+spring:
+  application:
+    name: edge-service
+  cloud:
+    loadbalancer:
+      ribbon:
+        enabled: false
+    consul:
+      host: ${HOST}
+      discovery:
+        service-name: ${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-${spring.application.name}
+        enabled: true
+        register: false
+        tags: bidsservice=edge-service
+    gateway:
+        globalcors:
+          cors-configurations:
+            '[/**]':
+              allowCredentials: true
+              allowedOriginPatterns:
+                - https://merling.dev.bnymellon.net
+                - https://merling.test.bnymellon.net
+
+              allowedHeaders: '*'
+              allowedMethods:
+                - OPTIONS
+                - GET
+                - POST
+                - CONNECT
+                - HEAD
+                - DELETE
+
+        routes:
+          - id: auth
+            uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-auth-service
+            predicates:
+              - Path=/auth/**
+            filters:
+              - PreserveHostHeader
+              - BIDSAuthorize
+              - RewritePath=/auth/(?<articleId>.*),/$\{articleId}
+
+          - id: nexenapi
+            uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-nexen-api-service
+            predicates:
+              - Path=/merlin/v2/**
+            filters:
+              - PreserveHostHeader
+              - BIDSAuthorize
+
+          - id: nexen-merlinapi
+            uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-merlin-api-service
+            predicates:
+              - Path=/merlin/v2/lineage/source-messages
+            filters:
+              - PreserveHostHeader
+              - BIDSAuthorize
+              - RewritePath=/merlin/v2/lineage/source-messages,/merlin/v1/lineage/source-messages
+
+          - id: merlinapi
+            uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-merlin-api-service
+            predicates:
+              - Path=/merlin/v1/**
+            filters:
+              - PreserveHostHeader
+              - BIDSAuthorize
+
+          - id: search
+            uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-search-service
+            predicates:
+              - Path=/search/**
+            filters:
+              - PreserveHostHeader
+              - BIDSAuthorize
+    sleuth:
+      web:
+        enabled: true
+        skip-pattern: /info|/actuator|/actuator/health
+      sampler:
+        probability: 0.1
+
+    web:
+      throw-exception-if-no-handler-found: true
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info,health
+
+
+resilience4j.thread-pool-bulkhead:
+  instances:
+    bulkheadConfig:
+      maxThreadPoolSize: 25
+      coreThreadPoolSize: 5
+      queueCapacity: 10
+
+
+server:
+  port: 7080
+
+
+logging:
+  level:
+    root: WARN
+    com.bnym.phm.bids-commons.web.trace.servlet: INFO
+
+
+
+bidsauth:
+  service: ${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-${BXP_APPLICATION_ID}-auth-service
+  path: /authorize
+  scheme: http
+  openendpoints: /merling/v1/api-docs,merling/v2/api-docs,search/v1/api-docs,/webjars/**,actuator/health,actuator/info,/docs/index.html,/open,/error
+
+
+springdoc:
+  swagger-ui:
+    urls:
+      - name: merlin
+        url: /merlin/v1/api-docs/merlin
+      - name: search
+        url: /search/v1/api-docs/search
+      - name: nexen
+      - url: merlin/v2/api-docs/nexen
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  cloud:
+    consul:
+      host: localhost
+      discovery:
+        service-name: ${spring.application.name}
+        hostname: localhost
+        register: true
+
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - '*'
+
+      routes:
+        - id: auth
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+            - RewritePath=/auth/(?<articleId>.*),/$\{articleId}
+
+
+        - id: nexenapi
+          uri: lb://nexen-api-service
+          predicates:
+            - Path=/merlin/v2/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+
+        - id: nexen_merlinapi
+          uri: lb://merlin-api-service
+          predicates:
+            - Path=/merlin/v2/lineage/source-messages
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+            - RewritePath=/merlin/v2/lineage/source-messages,merlin/v1/lineage/source-messages
+
+        - id: merlinapi
+          uri: lb://merlin-api-service
+          predicates:
+            - Path=/merlin/v1/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+
+        - id: search
+          uri: lb://search-service
+          predicates:
+            - Path=/search/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+
+        - id: chatbot
+          uri: lb://rasa-core
+          predicates:
+            - Path=/merlin-assist/**
+          filters:
+            - PreserveHostHeader
+            - RewritePath=/config/(?<articleId>.*),/webhooks/rest/bot/$\{articleId}
+
+        - id: wshome
+          uri: lb://web-socket-service
+          predicates:
+            - Path=/ws-home/**
+          filters:
+            - PreserveHostHeader
+            - RewritePath=/ws-home/(?<articleId>.*),/merling-live/v1/$\{articleId}
+
+        - id: onboarder-service
+          uri: lb://merling-api-service
+          predicates:
+            - Path=/onboard/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+            - RewritePath=/onboard/(?<articleId>.*),/merlin/v1/$\{articleId}
+
+        - id: websocket_sockjs_route
+          uri: lb://web-socket-service
+          predicates:
+            - Path=/merlin-live/v1/stream/info/**
+          filters:
+            - PreserveHostHeader
+
+        - id: websocket_route
+          uri: lb:ws://web-socket-service
+          predicates:
+            - Path=/merlin-live/v1/stream/**
+          filters:
+            - PreserveHostHeader
+
+server:
+  port: 8191
+
+bidsauth:
+  service: auth-service
+  path: /authorize
+  scheme: http
+  openendpoints: /merling/v1/api-docs,merling/v2/api-docs,search/v1/api-docs,/webjars/**,actuator/health,actuator/info,/docs/index.html,/open,/error
+
+
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - '*'
+
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns:
+              - '*'
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: qa
+
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  cloud:
+    consul:
+      discovery:
+        service-name: ${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-edge-service
+        register: false
+
+    gateway:
+      routes:
+        - id: auth
+          uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-auth-service
+          predicates:
+            - Path=/auth/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+            - RewritePath=/auth/(?<articleId>.*),/$\{articleId}
+
+
+        - id: nexenapi
+          uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-nexen-api-service
+          predicates:
+            - Path=/merlin/v2/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+
+        - id: nexen_merlinapi
+          uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-merlin-api-service
+          predicates:
+            - Path=/merlin/v2/lineage/source-messages
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+            - RewritePath=/merlin/v2/lineage/source-messages,merlin/v1/lineage/source-messages
+
+        - id: merlinapi
+          uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-merlin-api-service
+          predicates:
+            - Path=/merlin/v1/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+
+        - id: search
+          uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-search-service
+          predicates:
+            - Path=/search/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+
+        - id: wshome
+          uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-web-socket-service
+          predicates:
+            - Path=/ws-home/**
+          filters:
+            - PreserveHostHeader
+            - RewritePath=/ws-home/(?<articleId>.*),/merling-live/v1/$\{articleId}
+
+        - id: onboarder-service
+          uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-merling-api-service
+          predicates:
+            - Path=/onboard/**
+          filters:
+            - PreserveHostHeader
+            - BIDSAuthorize
+            - RewritePath=/onboard/(?<articleId>.*),/merlin/v1/$\{articleId}
+
+        - id: websocket_sockjs_route
+          uri: lb://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-web-socket-service
+          predicates:
+            - Path=/merlin-live/v1/stream/info/**
+          filters:
+            - PreserveHostHeader
+
+        - id: websocket_route
+          uri: lb:ws://${BXP_DEPLOYMENT}-${BXP_FAMILY_ID}-web-socket-service
+          predicates:
+            - Path=/merlin-live/v1/stream/**
+          filters:
+            - PreserveHostHeader
+
+bidsauth:
+  service: auth-service
+  path: /authorize
+  scheme: http
+  openendpoints: /merling/v1/api-docs,merling/v2/api-docs,search/v1/api-docs,/webjars/**,actuator/health,actuator/info,/docs/index.html,/open,/error
