@@ -29,9 +29,9 @@ public class UserPreferenceService {
 
     @Bulkhead(name = CommonConstants.BULK_HEAD_CONFIG)
     public GenericUserPreference finUserPreferencebyCommitID(String commitID){
-        GenericUserPreference genericUserPreferenceInfo = new GenericUserPreference();//userPreferenceRepository.findByCommitId(commitID);
-        genericUserPreferenceInfo.setId("1");
-        genericUserPreferenceInfo.setCommitId("ADCCLOM");
+        GenericUserPreference genericUserPreferenceInfo = userPreferenceRepository.findByCommitId(commitID);
+//        genericUserPreferenceInfo.setId("1");
+//        genericUserPreferenceInfo.setCommitId("ADCCLOM");
         if(null == genericUserPreferenceInfo){
             throw new BIDSApplicationException(HttpStatus.NOT_FOUND,"User info not found");
         }
