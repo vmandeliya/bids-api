@@ -31,7 +31,7 @@ public class UserPreferenceController implements UserPreferenceInterface {
     @Override
     @RequestMapping(value= "/user-preference",method= RequestMethod.GET)
     public ResponseEntity<AgGridPreferenceInfo> getUserPreferenceFromMongo() {
-        String commitID = "ADCCLOM";//request.getRemoteUser();
+        String commitID = "ADCCL0M";//request.getRemoteUser();
         System.out.println(commitID);
         GenericUserPreference genericUserPreference = userPreferenceService.finUserPreferencebyCommitID(commitID);
         AgGridPreferenceInfo agGridPreferenceInfo = AgGridPreferenceInfo.GenericFormatConversionToClientSpecific(genericUserPreference);

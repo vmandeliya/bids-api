@@ -54,12 +54,6 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>phm.bids</groupId>
-			<artifactId>bids-shared-commons</artifactId>
-			<version>1.0.0-SNAPSHOT</version>
-		</dependency>
-
 	</dependencies>
 	<properties>
 		<maven.compiler.source>11</maven.compiler.source>
