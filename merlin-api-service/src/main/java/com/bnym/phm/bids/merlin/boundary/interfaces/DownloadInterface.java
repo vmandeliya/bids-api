@@ -9,6 +9,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 @FeignClient(name= "${feign.servicename.ebc.downloader}")
 public interface DownloadInterface {
 
-    @RequestMapping(value="/user-preferencea",method= RequestMethod.GET)
+    @RequestMapping(value="/user-preference",method= RequestMethod.GET)
     ResponseEntity<AgGridPreferenceInfo> getUserPreferenceFromMongo();
 }
