@@ -61,7 +61,7 @@ resilience4j.thread-pool-bulkhead:
 server:
   port: 7079
   servlet:
-    context-path: /merlin
+    context-path: /merlin/v1
 
 feign:
   client:
