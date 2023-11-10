@@ -31,7 +31,7 @@ public class BidsSecurityExtention extends WebSecurityConfigurerAdapter{
         /**
          * below is bnym config
          super.configure(http);
-         http.csrf.disable();
+         http.csrf().disable();
          http.requestMatchers().mvcMatchers(protectedEndPoints);
 
          **/

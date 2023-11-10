@@ -34,7 +34,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: info,health
+        include: info,health #health endpoint is enabled bydefault by spring
   server:
     servlet:
       context-path: /actuator

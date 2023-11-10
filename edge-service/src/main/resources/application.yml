@@ -88,7 +88,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: info,health
+        include: info,health #health endpoint is enable by default by spring
 
 
 resilience4j.thread-pool-bulkhead:
@@ -107,7 +107,6 @@ logging:
   level:
     root: WARN
     com.bnym.phm.bids-commons.web.trace.servlet: INFO
-
 
 
 bidsauth:
